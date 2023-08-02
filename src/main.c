@@ -280,6 +280,8 @@ void deleteStation(pntNodo z) {
 		z->km = y->km;
 	if (y->color == b)
 		rbDeleteFixup(x);
+
+	free(y);
 }
 
 bool removeCar(pntNodo s, int c) {
@@ -305,7 +307,7 @@ int main()
 	int i, num_stazione, num, car, new_size;
 	bool is_stazione, esiste;
 	char tmp;
-	pntNodo stazione, rm;
+	pntNodo stazione, rm, tmp_stazione;
 
 	// nodo sentinella NULL
 	nil = malloc(sizeof(Nodo));
@@ -341,12 +343,13 @@ int main()
 					if(is_stazione == true) {
 						if (tmp == ' ') {
 							is_stazione = false;
-							if ((rm = searchStazione(num_stazione)) != nil) {
+							if ((tmp_stazione = searchStazione(num_stazione)) != nil) {
 								printf("non aggiunta\n");
 								break;
 							}
 							else {
-								printf("aggiunta stazione num = %d\n", num_stazione);
+								//printf("aggiunta stazione num = %d\n", num_stazione);
+								printf("aggiunta\n");
 								stazione = malloc(sizeof(Nodo));
 								stazione->km = num_stazione;
 								// array car è grande COST
@@ -378,12 +381,34 @@ int main()
 			else if(tmp == 'a'){
 				// scorre fino alla fine del comando
 				while((tmp = getc_unlocked(stdin)) != ' ');
-				printf("lettura aggiungi-auto e non so ancora cosa fare\n");
-				while((tmp = getc_unlocked(stdin)) != '\n') {
-					//controllo se c'è spazio e
-					//aggiungi se c'è
-					//altrimnti crea spazioe poi aggiungi
 
+				is_stazione = true;
+				num_stazione = 0;
+				esiste = true;
+				car = 0;
+				while((tmp = getc_unlocked(stdin)) != '\n' && esiste == true) {
+
+					if(is_stazione == true) {
+						if (tmp == ' ') {
+							is_stazione = false;
+							if ((tmp_stazione = searchStazione(num_stazione)) == nil) {
+								//printf("stazione) non aggiunta\n");
+								printf("non aggiunta\n");
+								esiste = false;
+							}
+						}
+						else num_stazione = num_stazione * 10 + (tmp - '0');
+					}
+					else car = car * 10 + (tmp - '0');
+				}
+				if (esiste == true) {
+					if (stazione->numCar % COST == 0) {
+						new_size = stazione->numCar + COST;
+						stazione->car = realloc(stazione->car, new_size * sizeof(int));
+					}
+					stazione->car[stazione->numCar] = car;
+					stazione->numCar++;
+					printf("aggiunta\n");
 				}
 			}
 		}
@@ -395,14 +420,17 @@ int main()
 			is_stazione = true;
 			num_stazione = 0;
 			esiste = true;
+			car = 0;
 			while((tmp = getc_unlocked(stdin)) != '\n' && esiste == true) {
 
 				if(is_stazione == true) {
 					if (tmp == ' ') {
 						is_stazione = false;
-						if ((rm = searchStazione(num_stazione)) == nil) {
-							printf("stazione) non rottamata\n");
+						if ((tmp_stazione = searchStazione(num_stazione)) == nil) {
+							//printf("stazione) non rottamata\n");
+							printf("non rottamata\n");
 							esiste = false;
+							//printf("esiste = %s\n", esiste ? "true" : "false");
 						}
 					}
 					else num_stazione = num_stazione * 10 + (tmp - '0');
@@ -410,10 +438,14 @@ int main()
 				else car = car * 10 + (tmp - '0');
 			}
 
-			if (esiste == true && removeCar(rm, car) == false)
-				printf("auto) non rottamata\n");
-			else 
-				printf("rottamata\n");
+			if (esiste == true) { 
+				if (removeCar(tmp_stazione, car) == true)
+					printf("rottamata\n");
+
+				else 
+				//printf("auto) non rottamata\n");
+				printf("non rottamata\n");
+			}
 		}
 		// demolisci
 		else if (tmp == 'd') {
@@ -429,7 +461,6 @@ int main()
 			if (rm == nil) printf("non demolita\n");
 			else {
 				deleteStation(rm);
-				free(rm);
 				printf("demolita\n");
 			}
 		}
