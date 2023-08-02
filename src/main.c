@@ -5,7 +5,7 @@
 
 #define b 'b'
 #define r 'r'
-#define COST 64
+#define COST 128
 
 typedef struct RB {
 	int km;
@@ -165,15 +165,147 @@ pntNodo treeMax(pntNodo x) {
 	return x;
 }
 
+pntNodo treeSucc(pntNodo x)
+{
+	pntNodo y;
+
+	if(x->right != nil)
+		return treeMinimum(x->right);
+
+	y = x->p;
+
+	while(y != nil && x == y->right) {
+		x = y;
+		y = y->p;
+	}
+	
+	return y;
+}
+
+pntNodo searchStazione(int x) {
+	pntNodo pnt = t->root;
+
+	while(pnt != nil) {
+		
+		if(pnt->km < x) pnt = pnt->right;
+		if(pnt->km > x) pnt = pnt->left;
+
+		if(pnt->km == x) return pnt;
+	}
+	return nil;
+}
+
+void rbDeleteFixup(pntNodo x){
+	pntNodo w;
+
+	while (x != t->root && x->color == b) {
+		if (x == x->p->left) {
+			w = x->p->right;
+
+			if (w->color == r) {
+				w->color = b;
+				x->p->color = r;
+				leftRotate(x->p);
+				w = x->p->right;
+			}
+			if (w->left->color == b && w->right->color == b) {
+				w->color = r;
+				x = x->p;
+			}
+			else {
+				if (w->right->color == b) {
+					w->left->color = b;
+					w->color = r;
+					rightRotate(w);
+					w = x->p->right;
+				}
+				w->color = x->p->color;
+				x->p->color = b;
+				w->right->color = b;
+				leftRotate(x->p);
+				x = t->root;
+			}
+		}
+		else {
+			w = x->p->left;
+
+			if (w->color == r) {
+				w->color = b;
+				x->p->color = r;
+				leftRotate(x->p);
+				w = x->p->left;
+			}
+			if (w->right->color == b && w->left->color == b) {
+				w->color = r;
+				x = x->p;
+			}
+			else {
+				if (w->left->color == b) {
+					w->right->color = b;
+					w->color = r;
+					rightRotate(w);
+					w = x->p->left;
+				}
+				w->color = x->p->color;
+				x->p->color = b;
+				w->left->color = b;
+				leftRotate(x->p);
+				x = t->root;
+			}
+		}
+	}
+	x->color = b;
+}
+
+void deleteStation(pntNodo z) {
+	pntNodo x, y;
+
+	if (z->left == nil || z->right == nil)
+		y = z;
+	else 
+		y = treeSucc(z);
+	if (y->left != nil) 
+		x = y->left;
+	else
+		x = y->right;
+
+	x->p = y->p;
+	if (y->p == nil)
+		t->root = x;
+	else if (y == y->p->left)
+		y->p->left = x;
+	else
+		y->p->right = x;
+	if (y != z)
+		z->km = y->km;
+	if (y->color == b)
+		rbDeleteFixup(x);
+}
+
+bool removeCar(pntNodo s, int c) {
+	int i;
+
+	for (i = 0; i < s->numCar; i++) {
+		if (s->car[i] == c) {
+			// Swap with the last element
+			s->car[i] = s->car[s->numCar - 1];
+			// se c'è un prolema con macchina fanstama togli veramente quella che rimuovi
+			s->numCar--;
+			return true;
+		}
+	}
+	return false;
+}
+
 void inorderTreeWalk(pntNodo x);
 void stampaStazione(pntNodo x);
 
 int main()
 {
-	int i, num_stazione, num, car;
-	bool is_stazione;
+	int i, num_stazione, num, car, new_size;
+	bool is_stazione, esiste;
 	char tmp;
-	pntNodo stazione;
+	pntNodo stazione, rm;
 
 	// nodo sentinella NULL
 	nil = malloc(sizeof(Nodo));
@@ -181,6 +313,8 @@ int main()
 	nil->p = NULL;
 	nil->right = NULL;
 	nil->left = NULL;
+	nil->numCar = 0;
+	nil->km = -1;
 
 	// nodo testa dell'albero
 	t = malloc(sizeof(tree));
@@ -207,17 +341,28 @@ int main()
 					if(is_stazione == true) {
 						if (tmp == ' ') {
 							is_stazione = false;
-							stazione = malloc(sizeof(Nodo));
-							stazione->km = num_stazione;
-							// array car è grande COST
-							stazione->car = calloc(COST, sizeof(int));
-							stazione->numCar = 0;
-							rbInsert(stazione);
+							if ((rm = searchStazione(num_stazione)) != nil) {
+								printf("non aggiunta\n");
+								break;
+							}
+							else {
+								printf("aggiunta stazione num = %d\n", num_stazione);
+								stazione = malloc(sizeof(Nodo));
+								stazione->km = num_stazione;
+								// array car è grande COST
+								stazione->car = calloc(COST, sizeof(int));
+								stazione->numCar = 0;
+								rbInsert(stazione);
+							}
 						}
 						else num_stazione = num_stazione * 10 + (tmp - '0');
 					}
 					else {
 						if (tmp == ' ') {
+							if (stazione->numCar % COST == 0) {
+								new_size = stazione->numCar + COST;
+								stazione->car = realloc(stazione->car, new_size * sizeof(int));
+							}
 							stazione->car[stazione->numCar] = car;
 							stazione->numCar++;
 							car = 0;
@@ -227,32 +372,68 @@ int main()
 						}
 					}
 				}
-				stampaStazione(stazione);
+				// stampaStazione(stazione);
 			}
 			// caso aggiungi-auto
 			else if(tmp == 'a'){
 				// scorre fino alla fine del comando
 				while((tmp = getc_unlocked(stdin)) != ' ');
-				// va gestitio la lettura degli interi
 				printf("lettura aggiungi-auto e non so ancora cosa fare\n");
-				while((tmp = getc_unlocked(stdin)) != '\n');
+				while((tmp = getc_unlocked(stdin)) != '\n') {
+					//controllo se c'è spazio e
+					//aggiungi se c'è
+					//altrimnti crea spazioe poi aggiungi
+
+				}
 			}
 		}
 		// rottama
 		else if (tmp == 'r'){
 			// scorre fino alla fine del comando
 			while((tmp = getc_unlocked(stdin)) != ' ');
-			// va gestitio la lettura degli interi
-			printf("lettura rottama-auto e non so ancora cosa fare\n");
-			while((tmp = getc_unlocked(stdin)) != '\n');
+
+			is_stazione = true;
+			num_stazione = 0;
+			esiste = true;
+			while((tmp = getc_unlocked(stdin)) != '\n' && esiste == true) {
+
+				if(is_stazione == true) {
+					if (tmp == ' ') {
+						is_stazione = false;
+						if ((rm = searchStazione(num_stazione)) == nil) {
+							printf("stazione) non rottamata\n");
+							esiste = false;
+						}
+					}
+					else num_stazione = num_stazione * 10 + (tmp - '0');
+				}
+				else car = car * 10 + (tmp - '0');
+			}
+
+			if (esiste == true && removeCar(rm, car) == false)
+				printf("auto) non rottamata\n");
+			else 
+				printf("rottamata\n");
 		}
+		// demolisci
 		else if (tmp == 'd') {
 			// scorre fino alla fine del comando
 			while((tmp = getc_unlocked(stdin)) != ' ');
-			// va gestitio la lettura degli interi
-			printf("lettura demolisci-stazione e non so ancora cosa fare\n");
-			while((tmp = getc_unlocked(stdin)) != '\n');
+
+			num_stazione = 0;
+			while((tmp = getc_unlocked(stdin)) != '\n') {
+
+				num_stazione = num_stazione * 10 + (tmp - '0');
+			}
+			rm = searchStazione(num_stazione);
+			if (rm == nil) printf("non demolita\n");
+			else {
+				deleteStation(rm);
+				free(rm);
+				printf("demolita\n");
+			}
 		}
+		// pianifica
 		else if (tmp == 'p') {
 			// scorre fino alla fine del comando
 			while((tmp = getc_unlocked(stdin)) != ' ');
