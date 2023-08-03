@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdbool.h>
 
 #define b 'b'
 #define r 'r'
-#define COST 128
+#define COST 512
 
 typedef struct RB {
 	int km;
@@ -22,6 +21,9 @@ typedef struct tr {
 // variabili globali
 pntNodo nil;              // per fare solo una malloc
 pntTree t;                // solo una albero con ogni stazione
+
+void inorderTreeWalk(pntNodo x);
+void stampaStazione(pntNodo x);
 
 void leftRotate(pntNodo x) {
 	pntNodo y = x->right;
@@ -68,58 +70,50 @@ void rightRotate(pntNodo x) {
 }
 
 void rbInsertFixUp(pntNodo z) {
-	pntNodo x, y;
+	pntNodo y;
 
-	if(z == t->root)
-		t->root->color = b;
+	while (z->p->color == r) {
+		if (z->p == z->p->p->left) {
+			y = z->p->p->right;
 
-	else{
-		x = z->p;
-		if(x->color == r){
-			if(x == x->p->left){
-				y = x->p->right;
-
-				if(y->color == r){
-					x->color = b;
-					y->color = b;
-					x->p->color = r;
-
-					rbInsertFixUp(x->p);
-				}
-				else{
-					if(z == x->right){
-						z = x;
-						leftRotate(z);
-						x = z->p;
-					}
-					x->color = b;
-					x->p->color = r;
-					rightRotate(x->p);
-				}
+			if (y->color == r) {
+				//Case 1
+				z->p->color = b;
+				y->color = b;
+				z->p->p->color = r;
+				z = z->p->p;
+			} else if (z == z->p->right) {
+				//Case 2
+				z = z->p;
+				leftRotate(z);
+			} else {
+				//Case 3
+				z->p->color = b;
+				z->p->p->color = r;
+				rightRotate(z->p->p);
 			}
-			else{
-				y = x->p->left;
+		} else {
+			y = z->p->p->left;
 
-				if(y->color == r){
-					x->color = b;
-					y->color = b;
-					x->p->color = r;
-
-					rbInsertFixUp(x->p);
-				}
-				else{
-					if(z == x->left){
-						z = x;
-						rightRotate(z);
-						x = z->p;
-					}
-					x->color = b;
-					x->p->color = r;
-					leftRotate(x->p);
-				}
+			if (y->color == r) {
+				//Case 1
+				z->p->color = b;
+				y->color = b;
+				z->p->p->color = r;
+				z = z->p->p;
+			} else if (z == z->p->left) {
+				//Case 2
+				z = z->p;
+				rightRotate(z);
+			} else {
+				//Case 3
+				z->p->color = b;
+				z->p->p->color = r;
+				leftRotate(z->p->p);
 			}
 		}
 	}
+	t->root->color = b;
 }
 
 void rbInsert(pntNodo z) {
@@ -188,15 +182,15 @@ pntNodo searchStazione(int x) {
 	while(pnt != nil) {
 		
 		if(pnt->km < x) pnt = pnt->right;
-		if(pnt->km > x) pnt = pnt->left;
+		else if(pnt->km > x) pnt = pnt->left;
 
-		if(pnt->km == x) return pnt;
+		else return pnt;
 	}
 	return nil;
 }
 
 void rbDeleteFixup(pntNodo x){
-	pntNodo w;
+	pntNodo w = nil;
 
 	while (x != t->root && x->color == b) {
 		if (x == x->p->left) {
@@ -212,13 +206,13 @@ void rbDeleteFixup(pntNodo x){
 				w->color = r;
 				x = x->p;
 			}
+			else if (w->right->color == b) {
+				w->left->color = b;
+				w->color = r;
+				rightRotate(w);
+				w = x->p->right;
+			}
 			else {
-				if (w->right->color == b) {
-					w->left->color = b;
-					w->color = r;
-					rightRotate(w);
-					w = x->p->right;
-				}
 				w->color = x->p->color;
 				x->p->color = b;
 				w->right->color = b;
@@ -232,24 +226,24 @@ void rbDeleteFixup(pntNodo x){
 			if (w->color == r) {
 				w->color = b;
 				x->p->color = r;
-				leftRotate(x->p);
+				rightRotate(x->p);
 				w = x->p->left;
 			}
 			if (w->right->color == b && w->left->color == b) {
 				w->color = r;
 				x = x->p;
 			}
+			else if (w->left->color == b) {
+				w->right->color = b;
+				w->color = r;
+				leftRotate(w);
+				w = x->p->left;
+			}
 			else {
-				if (w->left->color == b) {
-					w->right->color = b;
-					w->color = r;
-					rightRotate(w);
-					w = x->p->left;
-				}
 				w->color = x->p->color;
 				x->p->color = b;
 				w->left->color = b;
-				leftRotate(x->p);
+				rightRotate(x->p);
 				x = t->root;
 			}
 		}
@@ -276,14 +270,31 @@ void deleteStation(pntNodo z) {
 		y->p->left = x;
 	else
 		y->p->right = x;
-	if (y != z)
+	if (y != z) {
 		z->km = y->km;
+		free(z->car); // Free the existing car array of z
+		z->car = y->car; // Assign y's car array to z
+		y->car = NULL; // Set y's car pointer to NULL
+		z->numCar = y->numCar;
+	}
 	if (y->color == b)
 		rbDeleteFixup(x);
 
+	if(y->car != NULL)
+		free(y->car);
 	free(y);
 }
 
+void addCar(pntNodo stazione, int car){
+	int new_size;
+
+	if (stazione->numCar % COST == 0) {
+		new_size = stazione->numCar + COST;
+		stazione->car = realloc(stazione->car, new_size * sizeof(int));
+	}
+	stazione->car[stazione->numCar] = car;
+	stazione->numCar++;
+}
 bool removeCar(pntNodo s, int c) {
 	int i;
 
@@ -291,7 +302,7 @@ bool removeCar(pntNodo s, int c) {
 		if (s->car[i] == c) {
 			// Swap with the last element
 			s->car[i] = s->car[s->numCar - 1];
-			// se c'è un prolema con macchina fanstama togli veramente quella che rimuovi
+			s->car[s->numCar - 1] = 0;
 			s->numCar--;
 			return true;
 		}
@@ -299,15 +310,14 @@ bool removeCar(pntNodo s, int c) {
 	return false;
 }
 
-void inorderTreeWalk(pntNodo x);
-void stampaStazione(pntNodo x);
+void controllo();
 
 int main()
 {
 	int i, num_stazione, num, car, new_size;
 	bool is_stazione, esiste;
 	char tmp;
-	pntNodo stazione, rm, tmp_stazione;
+	pntNodo stazione, rm;
 
 	// nodo sentinella NULL
 	nil = malloc(sizeof(Nodo));
@@ -315,7 +325,7 @@ int main()
 	nil->p = NULL;
 	nil->right = NULL;
 	nil->left = NULL;
-	nil->numCar = 0;
+	nil->numCar = -1;
 	nil->km = -1;
 
 	// nodo testa dell'albero
@@ -334,40 +344,37 @@ int main()
 				// scorre fino alla fine del comando
 				while((tmp = getc_unlocked(stdin)) != ' ');
 
-				// t = malloc(sizeof(tree));
 				num_stazione = 0;
 				is_stazione = true;
 				car = 0;
+				esiste = true;
 				while ((tmp = getc_unlocked(stdin)) != '\n') {
 
 					if(is_stazione == true) {
 						if (tmp == ' ') {
 							is_stazione = false;
-							if ((tmp_stazione = searchStazione(num_stazione)) != nil) {
+							// controllo se già esiste una stazione con quel numero
+							if ((stazione = searchStazione(num_stazione)) != nil) {
+								esiste = false; // allora quella corrente che avrei creato non esiste
 								printf("non aggiunta\n");
-								break;
 							}
 							else {
-								//printf("aggiunta stazione num = %d\n", num_stazione);
-								printf("aggiunta\n");
 								stazione = malloc(sizeof(Nodo));
 								stazione->km = num_stazione;
 								// array car è grande COST
 								stazione->car = calloc(COST, sizeof(int));
 								stazione->numCar = 0;
 								rbInsert(stazione);
+								// printf("aggiunta stazione num = %d\n", num_stazione);
+								printf("aggiunta\n");
 							}
 						}
 						else num_stazione = num_stazione * 10 + (tmp - '0');
 					}
 					else {
 						if (tmp == ' ') {
-							if (stazione->numCar % COST == 0) {
-								new_size = stazione->numCar + COST;
-								stazione->car = realloc(stazione->car, new_size * sizeof(int));
-							}
-							stazione->car[stazione->numCar] = car;
-							stazione->numCar++;
+							// printf("Debug: Adding car %d to station km = %d\n", car, stazione->km); // Debug print
+							addCar(stazione, car);
 							car = 0;
 						}
 						else {
@@ -375,7 +382,8 @@ int main()
 						}
 					}
 				}
-				// stampaStazione(stazione);
+				if (esiste == true)
+					addCar(stazione, car);
 			}
 			// caso aggiungi-auto
 			else if(tmp == 'a'){
@@ -386,12 +394,13 @@ int main()
 				num_stazione = 0;
 				esiste = true;
 				car = 0;
-				while((tmp = getc_unlocked(stdin)) != '\n' && esiste == true) {
+				while((tmp = getc_unlocked(stdin)) != '\n') {
 
 					if(is_stazione == true) {
 						if (tmp == ' ') {
 							is_stazione = false;
-							if ((tmp_stazione = searchStazione(num_stazione)) == nil) {
+							if ((stazione = searchStazione(num_stazione)) == nil) {
+								// printf("Debug: Station not found for km = %d\n", num_stazione); // Debug print
 								//printf("stazione) non aggiunta\n");
 								printf("non aggiunta\n");
 								esiste = false;
@@ -402,12 +411,9 @@ int main()
 					else car = car * 10 + (tmp - '0');
 				}
 				if (esiste == true) {
-					if (stazione->numCar % COST == 0) {
-						new_size = stazione->numCar + COST;
-						stazione->car = realloc(stazione->car, new_size * sizeof(int));
-					}
-					stazione->car[stazione->numCar] = car;
-					stazione->numCar++;
+					// printf("Debug: Adding car %d to station km = %d\n", car, stazione->km); // Debug print
+					addCar(stazione, car);
+					car = 0;
 					printf("aggiunta\n");
 				}
 			}
@@ -421,12 +427,17 @@ int main()
 			num_stazione = 0;
 			esiste = true;
 			car = 0;
-			while((tmp = getc_unlocked(stdin)) != '\n' && esiste == true) {
+			while((tmp = getc_unlocked(stdin)) != '\n') {
 
 				if(is_stazione == true) {
 					if (tmp == ' ') {
 						is_stazione = false;
-						if ((tmp_stazione = searchStazione(num_stazione)) == nil) {
+
+						//stazione = searchStazione(num_stazione);
+						//printf("Debug: Station number: %d\n", stazione->km); // Debug print
+						//if (stazione == nil) {
+
+						if ((stazione = searchStazione(num_stazione)) == nil) {
 							//printf("stazione) non rottamata\n");
 							printf("non rottamata\n");
 							esiste = false;
@@ -439,12 +450,17 @@ int main()
 			}
 
 			if (esiste == true) { 
-				if (removeCar(tmp_stazione, car) == true)
+				if (removeCar(stazione, car) == true)
 					printf("rottamata\n");
 
-				else 
+				else {
 				//printf("auto) non rottamata\n");
 				printf("non rottamata\n");
+				/*
+				if (stazione->km == 765 || stazione->km == 3339 || stazione->km == 873)
+					stampaStazione(stazione);
+				*/
+				}
 			}
 		}
 		// demolisci
@@ -454,7 +470,6 @@ int main()
 
 			num_stazione = 0;
 			while((tmp = getc_unlocked(stdin)) != '\n') {
-
 				num_stazione = num_stazione * 10 + (tmp - '0');
 			}
 			rm = searchStazione(num_stazione);
@@ -473,7 +488,8 @@ int main()
 			while((tmp = getc_unlocked(stdin)) != '\n');
 		}
 	}
-	inorderTreeWalk(t->root);
+	// inorderTreeWalk(t->root);
+	// controllo();
 	return 0;
 }
 // DEBUG
@@ -494,4 +510,19 @@ void inorderTreeWalk(pntNodo x) {
 		printf("%d\t", x->km);
 		inorderTreeWalk(x->right);
 	}
+}
+
+void controllo(){
+	pntNodo s765, s2913, s873, s1105, s3339, s5428;
+
+	s765 = searchStazione(765);
+	s2913 = searchStazione(2913);
+	s873 = searchStazione(873);
+	s1105 = searchStazione(1105);
+	s3339 = searchStazione(3339);
+	s5428 = searchStazione(5428);
+
+	if (s765->car == s2913->car) printf("prima coppia di puntatori sono uguali\n");
+	if (s873->car == s1105->car) printf("seconda coppia di puntatori sono uguali\n");
+	if (s3339->car == s5428->car) printf("terza coppia di puntatori sono uguali\n");
 }
