@@ -285,40 +285,60 @@ void deleteStation(pntNodo z) {
 	free(y);
 }
 
-void addCar(pntNodo stazione, int car){
+void addCar(pntNodo s, int car){
 	int new_size;
 
-	if (stazione->numCar % COST == 0) {
-		new_size = stazione->numCar + COST;
-		stazione->car = realloc(stazione->car, new_size * sizeof(int));
+	if (s->numCar % COST == 0) {
+		new_size = s->numCar + COST;
+		s->car = realloc(s->car, new_size * sizeof(int));
 	}
-	stazione->car[stazione->numCar] = car;
-	stazione->numCar++;
+	if (s->car[0] > car)
+		s->car[s->numCar] = car;
+	else {
+		s->car[s->numCar] = s->car[0];
+		s->car[0] = car;
+	}
+	s->numCar++;
 }
+
 bool removeCar(pntNodo s, int c) {
 	int i;
 
 	for (i = 0; i < s->numCar; i++) {
 		if (s->car[i] == c) {
-			// Swap with the last element
-			s->car[i] = s->car[s->numCar - 1];
-			s->car[s->numCar - 1] = 0;
-			s->numCar--;
-			return true;
+			if (i != 0) {
+				// Swap with the last element
+				s->car[i] = s->car[s->numCar - 1];
+				s->car[s->numCar - 1] = 0;
+				s->numCar--;
+				return true;
+			}
+			else { 
+				int j, i_max;
+				for (j = 2, i_max = 1; j < s->numCar; j++){
+					if (s->car[i_max] < s->car[j]) i_max = j;
+				}
+				s->car[0] = s->car[i_max];
+				s->car[i_max] = s->car[s->numCar - 1];
+				s->car[s->numCar - 1] = 0;
+				s->numCar--;
+				return true;
+			}
 		}
 	}
 	return false;
 }
 
-void controllo();
+void planRoute(int start, int finish) {
+	int max_range;
+}
 
 int main()
 {
-	int i, num_stazione, num, car, new_size;
+	int i, num_stazione, num, car, new_size, start, finish;
 	bool is_stazione, esiste;
 	char tmp;
 	pntNodo stazione, rm;
-
 	// nodo sentinella NULL
 	nil = malloc(sizeof(Nodo));
 	nil->color = b;
@@ -483,13 +503,18 @@ int main()
 		else if (tmp == 'p') {
 			// scorre fino alla fine del comando
 			while((tmp = getc_unlocked(stdin)) != ' ');
-			// va gestitio la lettura degli interi
-			printf("lettura pianifica-percorso e non so ancora cosa fare\n");
-			while((tmp = getc_unlocked(stdin)) != '\n');
+			start = 0;
+			while((tmp = getc_unlocked(stdin)) != ' '){
+				start = start * 10 + (tmp - '0');
+			}
+			finish = 0;
+			while((tmp = getc_unlocked(stdin)) != '\n'){
+				finish = finish * 10 + (tmp - '0');
+			}
+			planRoute(start, finish);
 		}
 	}
 	// inorderTreeWalk(t->root);
-	// controllo();
 	return 0;
 }
 // DEBUG
@@ -507,22 +532,8 @@ void stampaStazione(pntNodo x){
 void inorderTreeWalk(pntNodo x) {
 	if(x != nil){
 		inorderTreeWalk(x->left);
-		printf("%d\t", x->km);
+		//printf("%d\t", x->km);
+		stampaStazione(x);
 		inorderTreeWalk(x->right);
 	}
-}
-
-void controllo(){
-	pntNodo s765, s2913, s873, s1105, s3339, s5428;
-
-	s765 = searchStazione(765);
-	s2913 = searchStazione(2913);
-	s873 = searchStazione(873);
-	s1105 = searchStazione(1105);
-	s3339 = searchStazione(3339);
-	s5428 = searchStazione(5428);
-
-	if (s765->car == s2913->car) printf("prima coppia di puntatori sono uguali\n");
-	if (s873->car == s1105->car) printf("seconda coppia di puntatori sono uguali\n");
-	if (s3339->car == s5428->car) printf("terza coppia di puntatori sono uguali\n");
 }
