@@ -4,7 +4,8 @@
 
 #define b 'b'
 #define r 'r'
-#define COST 512
+#define INF 999999999
+#define COST 128
 
 typedef struct RB {
 	int km;
@@ -16,7 +17,15 @@ typedef struct RB {
 	struct RB *p;} Nodo, *pntNodo;    // struttura dati nodo
 
 typedef struct tr {
-	pntNodo root;} tree, *pntTree; // struttura dati testa
+	pntNodo root;} tree, *pntTree;   // struttura dati testa
+
+typedef struct dst {
+	int station;
+	int numStation;
+	int maxCar;
+	bool seen;
+	int prec;} dist;                //struttura dati distanz
+
 
 // variabili globali
 pntNodo nil;              // per fare solo una malloc
@@ -169,6 +178,23 @@ pntNodo treeSucc(pntNodo x)
 	y = x->p;
 
 	while(y != nil && x == y->right) {
+		x = y;
+		y = y->p;
+	}
+	
+	return y;
+}
+
+pntNodo treePrecc(pntNodo x)
+{
+	pntNodo y;
+
+	if(x->left != nil)
+		return treeMax(x->left);
+
+	y = x->p;
+
+	while(y != nil && x == y->left) {
 		x = y;
 		y = y->p;
 	}
@@ -329,14 +355,146 @@ bool removeCar(pntNodo s, int c) {
 	return false;
 }
 
-void planRoute(int start, int finish) {
-	int max_range;
+int min(int x, int y) {
+    return (x < y) ? x : y;
+}
+ 
+void merge(dist d[], dist temp[], int s, int m, int f, int size){
+    int k = s, i = s, j = m + 1;
+ 
+    while (i <= m && j <= f)
+    {
+        if (d[i].numStation < d[j].numStation) {
+            temp[k++] = d[i++];
+        }
+        else {
+            temp[k++] = d[j++];
+        }
+    }
+ 
+    while (i < size && i <= m) {
+        temp[k++] = d[i++];
+    }
+
+    for (i = s; i <= f; i++) {
+		d[i] = temp[i];
+    }
+}
+
+void mergesort(dist d[], dist temp[], int low, int max, int size){
+	int m, i, start, mid, finish;
+
+    for (m = 1; m <= max - low; m = 2 * m)
+    {
+        for (i = low; i < max; i += 2 * m)
+        {
+            start = i;
+            mid = i + m - 1;
+            finish = min(i + 2 * m - 1, max);
+
+            merge(d, temp, start, mid, finish, size);
+        }
+    }
+}
+
+bool isXAdjYFW(dist x, dist y) {
+    // Check if station x is reachable from station y
+    if (y.station < x.station && y.station + y.maxCar >= x.station) return true;
+
+    return false;
+}
+
+void planRouteFW(int start, int finish) {
+    pntNodo s_start = searchStazione(start), curr;
+    int i, size = 0, j, minIndex;
+	bool okay = true;
+
+    curr = s_start;
+    while(okay == true){
+		if (curr->km == finish) okay = false;
+        size++;
+        curr = treeSucc(curr);
+    }
+
+    dist result[size];
+
+    for (i = 0, curr = s_start; i < size; i++, curr = treeSucc(curr)) {
+        result[i].station = curr->km;
+        result[i].maxCar = curr->car[0];
+        result[i].numStation = (i == 0) ? 0 : INF; // Initialize distances
+        result[i].prec = INF;
+        result[i].seen = false;
+    }
+
+    for (i = 0; i < size; i++) {
+        // Find the node with the minimum distance
+        minIndex = -1;
+        for (j = 0; j < size; j++) {
+            if (!result[j].seen && (minIndex == -1 || result[j].numStation < result[minIndex].numStation)) {
+                minIndex = j;
+            }
+        }
+
+        if (minIndex == -1) {
+            break; // All nodes have been processed
+        }
+
+        result[minIndex].seen = true;
+
+		// Update distances for all adjacent nodes
+		for (j = 0; j < size; j++) {
+			if (!result[j].seen && isXAdjYFW(result[j], result[minIndex]) 
+					&& result[minIndex].numStation + 1 < result[j].numStation) {
+				result[j].numStation = result[minIndex].numStation + 1;
+				result[j].prec = minIndex;
+			}
+		}
+
+    }
+	/*
+	// Print the shortest path
+	i = size - 1;
+	if (result[i].numStation == INF) {
+		printf("nessun percorso\n");
+	} else {
+		while(i != 0 && i != INF){
+			printf("%d ", result[i].station);
+			i = result[i].prec;
+		}
+		printf("%d\n", result[0].station);
+	}
+	*/
+	// Print the shortest path
+	i = size - 1;
+	if (result[i].numStation >= INF) {
+		printf("nessun percorso\n");
+	} else {
+		// Create a stack to store the path
+		int stack[size];
+		int top = -1; // Initialize top of stack
+
+		// Push the path onto the stack
+		while(i != 0 && i != INF){
+			stack[++top] = result[i].station;
+			i = result[i].prec;
+		}
+		stack[++top] = result[0].station;
+
+		// Print the path in the correct order
+		while(top != -1) {
+			printf("%d", stack[top--]);
+			if(top != -1) {
+				printf(" ");
+			}
+		}
+		printf("\n");
+	}
 }
 
 int main()
 {
 	int i, num_stazione, num, car, new_size, start, finish;
-	bool is_stazione, esiste;
+	bool is_stazione, esiste, prima;
 	char tmp;
 	pntNodo stazione, rm;
 	// nodo sentinella NULL
@@ -377,6 +535,7 @@ int main()
 							if ((stazione = searchStazione(num_stazione)) != nil) {
 								esiste = false; // allora quella corrente che avrei creato non esiste
 								printf("non aggiunta\n");
+								break;
 							}
 							else {
 								stazione = malloc(sizeof(Nodo));
@@ -386,6 +545,7 @@ int main()
 								stazione->numCar = 0;
 								rbInsert(stazione);
 								// printf("aggiunta stazione num = %d\n", num_stazione);
+								prima = true;
 								printf("aggiunta\n");
 							}
 						}
@@ -394,7 +554,9 @@ int main()
 					else {
 						if (tmp == ' ') {
 							// printf("Debug: Adding car %d to station km = %d\n", car, stazione->km); // Debug print
-							addCar(stazione, car);
+							if(prima == true) prima = false;
+							else
+								addCar(stazione, car);
 							car = 0;
 						}
 						else {
@@ -511,10 +673,14 @@ int main()
 			while((tmp = getc_unlocked(stdin)) != '\n'){
 				finish = finish * 10 + (tmp - '0');
 			}
-			planRoute(start, finish);
+			if (start < finish)
+				planRouteFW(start, finish);
+				//printf("NON SO ANCORA COME GESTIRE");
+			else
+				printf("NON SO ANCORA COME GESTIRE\n");
 		}
 	}
-	// inorderTreeWalk(t->root);
+	//inorderTreeWalk(t->root);
 	return 0;
 }
 // DEBUG
@@ -522,7 +688,7 @@ void stampaStazione(pntNodo x){
 
 	int i;
 
-	printf("numero stazione aggiunta al kilometro %d.\ncon le macchine:\t", x->km);
+	printf("stazione al kilometro %d, con un totale di %d.\ncon le macchine:\t", x->km, x->numCar - 1);
 	for(i = 0; i < x->numCar; i++) {
 		printf("%d ", x->car[i]);
 	}
