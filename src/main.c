@@ -355,6 +355,7 @@ bool removeCar(pntNodo s, int c) {
 	return false;
 }
 
+/*
 int min(int x, int y) {
     return (x < y) ? x : y;
 }
@@ -396,6 +397,7 @@ void mergesort(dist d[], dist temp[], int low, int max, int size){
         }
     }
 }
+*/
 
 bool isXAdjYFW(dist x, dist y) {
     // Check if station x is reachable from station y
@@ -491,9 +493,91 @@ void planRouteFW(int start, int finish) {
 	}
 }
 
+bool isXAdjYBW(dist x, dist y) {
+    // Check if station x is reachable from station y
+    if (y.station > x.station && y.station - y.maxCar <= x.station) return true;
+
+    return false;
+}
+
+void planRouteBW(int start, int finish) {
+    pntNodo s_start = searchStazione(start), curr;
+    int i, size = 0, j, minIndex;
+	bool okay = true;
+
+    curr = s_start;
+    while(okay == true){
+		if (curr->km == finish) okay = false;
+        size++;
+        curr = treePrecc(curr);
+    }
+
+    dist result[size];
+
+    for (i = 0, curr = s_start; i < size; i++, curr = treePrecc(curr)) {
+        result[i].station = curr->km;
+        result[i].maxCar = curr->car[0];
+        result[i].numStation = (i == 0) ? 0 : INF; // Initialize distances
+        result[i].prec = INF;
+        result[i].seen = false;
+    }
+
+    for (i = 0; i < size; i++) {
+        // Find the node with the minimum distance
+        minIndex = -1;
+        for (j = 0; j < size; j++) {
+            if (!result[j].seen 
+					&& ((minIndex == -1 || result[j].numStation < result[minIndex].numStation)
+					|| (minIndex != -1 && result[j].numStation == result[minIndex].numStation && result[j].station < result[minIndex].station))) {
+                minIndex = j;
+            }
+        }
+
+        if (minIndex == -1) {
+            break; // All nodes have been processed
+        }
+
+        result[minIndex].seen = true;
+
+		// Update distances for all adjacent nodes
+		for (j = 0; j < size; j++) {
+			if (!result[j].seen && isXAdjYBW(result[j], result[minIndex]) 
+					&& result[minIndex].numStation + 1 < result[j].numStation) {
+				result[j].numStation = result[minIndex].numStation + 1;
+				result[j].prec = minIndex;
+			}
+		}
+    }
+	// Print the shortest path
+	i = size - 1;
+	if (result[i].numStation >= INF) {
+		printf("nessun percorso\n");
+	} else {
+		// Create a stack to store the path
+		int stack[size];
+		int top = -1; // Initialize top of stack
+
+		// Push the path onto the stack
+		while(i != 0 && i != INF){
+			stack[++top] = result[i].station;
+			i = result[i].prec;
+		}
+		stack[++top] = result[0].station;
+
+		// Print the path in the correct order
+		while(top != -1) {
+			printf("%d", stack[top--]);
+			if(top != -1) {
+				printf(" ");
+			}
+		}
+		printf("\n");
+	}
+}
+
 int main()
 {
-	int i, num_stazione, num, car, new_size, start, finish;
+	int num_stazione, car, start, finish;
 	bool is_stazione, esiste, prima;
 	char tmp;
 	pntNodo stazione, rm;
@@ -638,10 +722,6 @@ int main()
 				else {
 				//printf("auto) non rottamata\n");
 				printf("non rottamata\n");
-				/*
-				if (stazione->km == 765 || stazione->km == 3339 || stazione->km == 873)
-					stampaStazione(stazione);
-				*/
 				}
 			}
 		}
@@ -677,7 +757,8 @@ int main()
 				planRouteFW(start, finish);
 				//printf("NON SO ANCORA COME GESTIRE");
 			else
-				printf("NON SO ANCORA COME GESTIRE\n");
+				planRouteBW(start, finish);
+				//printf("NON SO ANCORA COME GESTIRE\n");
 		}
 	}
 	//inorderTreeWalk(t->root);
