@@ -355,50 +355,6 @@ bool removeCar(pntNodo s, int c) {
 	return false;
 }
 
-/*
-int min(int x, int y) {
-    return (x < y) ? x : y;
-}
- 
-void merge(dist d[], dist temp[], int s, int m, int f, int size){
-    int k = s, i = s, j = m + 1;
- 
-    while (i <= m && j <= f)
-    {
-        if (d[i].numStation < d[j].numStation) {
-            temp[k++] = d[i++];
-        }
-        else {
-            temp[k++] = d[j++];
-        }
-    }
- 
-    while (i < size && i <= m) {
-        temp[k++] = d[i++];
-    }
-
-    for (i = s; i <= f; i++) {
-		d[i] = temp[i];
-    }
-}
-
-void mergesort(dist d[], dist temp[], int low, int max, int size){
-	int m, i, start, mid, finish;
-
-    for (m = 1; m <= max - low; m = 2 * m)
-    {
-        for (i = low; i < max; i += 2 * m)
-        {
-            start = i;
-            mid = i + m - 1;
-            finish = min(i + 2 * m - 1, max);
-
-            merge(d, temp, start, mid, finish, size);
-        }
-    }
-}
-*/
-
 bool isXAdjYFW(dist x, dist y) {
     // Check if station x is reachable from station y
     if (y.station < x.station && y.station + y.maxCar >= x.station) return true;
@@ -451,26 +407,13 @@ void planRouteFW(int start, int finish) {
 				result[j].prec = minIndex;
 			}
 		}
-
     }
-	/*
-	// Print the shortest path
-	i = size - 1;
-	if (result[i].numStation == INF) {
-		printf("nessun percorso\n");
-	} else {
-		while(i != 0 && i != INF){
-			printf("%d ", result[i].station);
-			i = result[i].prec;
-		}
-		printf("%d\n", result[0].station);
-	}
-	*/
 	// Print the shortest path
 	i = size - 1;
 	if (result[i].numStation >= INF) {
 		printf("nessun percorso\n");
-	} else {
+	} 
+	else {
 		// Create a stack to store the path
 		int stack[size];
 		int top = -1; // Initialize top of stack
@@ -628,7 +571,6 @@ int main()
 								stazione->car = calloc(COST, sizeof(int));
 								stazione->numCar = 0;
 								rbInsert(stazione);
-								// printf("aggiunta stazione num = %d\n", num_stazione);
 								prima = true;
 								printf("aggiunta\n");
 							}
@@ -637,7 +579,6 @@ int main()
 					}
 					else {
 						if (tmp == ' ') {
-							// printf("Debug: Adding car %d to station km = %d\n", car, stazione->km); // Debug print
 							if(prima == true) prima = false;
 							else
 								addCar(stazione, car);
@@ -666,7 +607,6 @@ int main()
 						if (tmp == ' ') {
 							is_stazione = false;
 							if ((stazione = searchStazione(num_stazione)) == nil) {
-								// printf("Debug: Station not found for km = %d\n", num_stazione); // Debug print
 								//printf("stazione) non aggiunta\n");
 								printf("non aggiunta\n");
 								esiste = false;
@@ -677,7 +617,6 @@ int main()
 					else car = car * 10 + (tmp - '0');
 				}
 				if (esiste == true) {
-					// printf("Debug: Adding car %d to station km = %d\n", car, stazione->km); // Debug print
 					addCar(stazione, car);
 					car = 0;
 					printf("aggiunta\n");
@@ -698,10 +637,6 @@ int main()
 				if(is_stazione == true) {
 					if (tmp == ' ') {
 						is_stazione = false;
-
-						//stazione = searchStazione(num_stazione);
-						//printf("Debug: Station number: %d\n", stazione->km); // Debug print
-						//if (stazione == nil) {
 
 						if ((stazione = searchStazione(num_stazione)) == nil) {
 							//printf("stazione) non rottamata\n");
@@ -755,10 +690,8 @@ int main()
 			}
 			if (start < finish)
 				planRouteFW(start, finish);
-				//printf("NON SO ANCORA COME GESTIRE");
 			else
 				planRouteBW(start, finish);
-				//printf("NON SO ANCORA COME GESTIRE\n");
 		}
 	}
 	//inorderTreeWalk(t->root);
