@@ -523,7 +523,7 @@ int main()
 	int num_stazione, car, start, finish;
 	bool is_stazione, esiste, prima;
 	char tmp;
-	pntNodo stazione, rm;
+	pntNodo stazione = nil, rm;
 	// nodo sentinella NULL
 	nil = malloc(sizeof(Nodo));
 	nil->color = b;
