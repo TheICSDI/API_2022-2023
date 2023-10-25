@@ -7,6 +7,7 @@
 #define INF 999999999
 #define COST 128
 
+/*    node data structured    */
 typedef struct RB {
 	int km;
 	int *car;
@@ -14,35 +15,38 @@ typedef struct RB {
 	char color;
 	struct RB *right;
 	struct RB *left;
-	struct RB *p;} Nodo, *pntNodo;    // struttura dati nodo
+	struct RB *p;} Nodo, *pntNodo;
 
+/*    tree root data structured    */
 typedef struct tr {
-	pntNodo root;} tree, *pntTree;   // struttura dati testa
+	pntNodo root;} tree, *pntTree;
 
+/*    simpler node for Dijkstra alg    */
 typedef struct dst {
 	int station;
 	int numStation;
 	int maxCar;
 	bool seen;
-	int prec;} dist;                //struttura dati distanz
+	int prec;} dist;
 
 
-// variabili globali
-pntNodo nil;              // per fare solo una malloc
-pntTree t;                // solo una albero con ogni stazione
+/*     global variable     */
+pntNodo nil;                // only null node for minimize the number of calls for malloc
+pntTree t;                  // the only root
 
+/*     DEBUG     */
 void inorderTreeWalk(pntNodo x);
 void stampaStazione(pntNodo x);
 
 void leftRotate(pntNodo x) {
 	pntNodo y = x->right;
 
-	x->right = y->left;         //il sotto albero sinisrto di y
-								//divenda quello destro di x
+	x->right = y->left;         // switch the y's left sub-tree with the x's right one
+
 	if(y->left != nil)
 		y->left->p = x;
 
-	y->p = x->p;                //attacca il padre di x a y
+	y->p = x->p;                // connect x's father to y
 	if(x->p == nil)
 		t->root = y;
 
@@ -59,8 +63,8 @@ void leftRotate(pntNodo x) {
 void rightRotate(pntNodo x) {
 	pntNodo y = x->left;
 
-	x->left = y->right;    //il sotto albero sinisrto di y
-						   //divenda quello destro di x
+	x->left = y->right;    // switch the y's left sub-tree with the x's right one
+
 	if(y->right != nil)
 		y->right->p = x;
 
@@ -86,17 +90,17 @@ void rbInsertFixUp(pntNodo z) {
 			y = z->p->p->right;
 
 			if (y->color == r) {
-				//Case 1
+				// Case 1
 				z->p->color = b;
 				y->color = b;
 				z->p->p->color = r;
 				z = z->p->p;
 			} else if (z == z->p->right) {
-				//Case 2
+				// Case 2
 				z = z->p;
 				leftRotate(z);
 			} else {
-				//Case 3
+				// Case 3
 				z->p->color = b;
 				z->p->p->color = r;
 				rightRotate(z->p->p);
@@ -105,17 +109,17 @@ void rbInsertFixUp(pntNodo z) {
 			y = z->p->p->left;
 
 			if (y->color == r) {
-				//Case 1
+				// Case 1
 				z->p->color = b;
 				y->color = b;
 				z->p->p->color = r;
 				z = z->p->p;
 			} else if (z == z->p->left) {
-				//Case 2
+				// Case 2
 				z = z->p;
 				rightRotate(z);
 			} else {
-				//Case 3
+				// Case 3
 				z->p->color = b;
 				z->p->p->color = r;
 				leftRotate(z->p->p);
@@ -139,7 +143,7 @@ void rbInsert(pntNodo z) {
 	}
 	z->p = y;
 
-	if(y == nil)   //caso in cui l'albero t è vuoto       
+	if(y == nil)   // case where t is an empty tree
 		t->root = z;
 
 	else if(z->km < y->km)
@@ -200,19 +204,6 @@ pntNodo treePrecc(pntNodo x)
 	}
 	
 	return y;
-}
-
-pntNodo searchStazione(int x) {
-	pntNodo pnt = t->root;
-
-	while(pnt != nil) {
-		
-		if(pnt->km < x) pnt = pnt->right;
-		else if(pnt->km > x) pnt = pnt->left;
-
-		else return pnt;
-	}
-	return nil;
 }
 
 void rbDeleteFixup(pntNodo x){
@@ -298,9 +289,9 @@ void deleteStation(pntNodo z) {
 		y->p->right = x;
 	if (y != z) {
 		z->km = y->km;
-		free(z->car); // Free the existing car array of z
-		z->car = y->car; // Assign y's car array to z
-		y->car = NULL; // Set y's car pointer to NULL
+		free(z->car);       // Free the existing car array of z
+		z->car = y->car;
+		y->car = NULL;      // Set y's car pointer to NULL
 		z->numCar = y->numCar;
 	}
 	if (y->color == b)
@@ -311,6 +302,21 @@ void deleteStation(pntNodo z) {
 	free(y);
 }
 
+/*  traverses the tree for the correct node from its km */
+pntNodo searchStazione(int x) {
+	pntNodo pnt = t->root;
+
+	while(pnt != nil) {
+		
+		if(pnt->km < x) pnt = pnt->right;
+		else if(pnt->km > x) pnt = pnt->left;
+
+		else return pnt;
+	}
+	return nil;
+}
+
+/*  Add a car in the node sub-array with the policy of car[0] = max(car[])  */
 void addCar(pntNodo s, int car){
 	int new_size;
 
@@ -319,7 +325,7 @@ void addCar(pntNodo s, int car){
 		s->car = realloc(s->car, new_size * sizeof(int));
 	}
 	if (s->car[0] > car)
-		s->car[s->numCar] = car;
+		s->car[s->numCar] = car;    // move the ex-max car to last position
 	else {
 		s->car[s->numCar] = s->car[0];
 		s->car[0] = car;
@@ -327,6 +333,7 @@ void addCar(pntNodo s, int car){
 	s->numCar++;
 }
 
+/*  Remove a car in the node sub-array with the policy of car[0] = max(car[])  */
 bool removeCar(pntNodo s, int c) {
 	int i;
 
@@ -355,18 +362,20 @@ bool removeCar(pntNodo s, int c) {
 	return false;
 }
 
+/*  Check if station x is adjacent to station y  Forward  */
 bool isXAdjYFW(dist x, dist y) {
-    // Check if station x is reachable from station y
     if (y.station < x.station && y.station + y.maxCar >= x.station) return true;
 
     return false;
 }
 
+/*  A queueless implementation of Dijkstra algorithm Forward (start < finish) */
 void planRouteFW(int start, int finish) {
     pntNodo s_start = searchStazione(start), curr;
     int i, size = 0, j, minIndex;
 	bool okay = true;
 
+	/*  Count all the possible station between start and finish  */
     curr = s_start;
     while(okay == true){
 		if (curr->km == finish) okay = false;
@@ -376,16 +385,18 @@ void planRouteFW(int start, int finish) {
 
     dist result[size];
 
+	/* Initialize the elements of the array with only the station counted before  */
     for (i = 0, curr = s_start; i < size; i++, curr = treeSucc(curr)) {
         result[i].station = curr->km;
         result[i].maxCar = curr->car[0];
-        result[i].numStation = (i == 0) ? 0 : INF; // Initialize distances
+        result[i].numStation = (i == 0) ? 0 : INF;
         result[i].prec = INF;
         result[i].seen = false;
     }
 
+	/* Actual search */
     for (i = 0; i < size; i++) {
-        // Find the node with the minimum distance
+        /* Find the node with the minimum distance */
         minIndex = -1;
         for (j = 0; j < size; j++) {
             if (!result[j].seen && (minIndex == -1 || result[j].numStation < result[minIndex].numStation)) {
@@ -393,39 +404,40 @@ void planRouteFW(int start, int finish) {
             }
         }
 
+		/* All nodes have been visited */
         if (minIndex == -1) {
-            break; // All nodes have been processed
+            break;
         }
 
         result[minIndex].seen = true;
 
-		// Update distances for all adjacent nodes
+		/* Update distances for all adjacent nodes */
 		for (j = 0; j < size; j++) {
 			if (!result[j].seen && isXAdjYFW(result[j], result[minIndex]) 
 					&& result[minIndex].numStation + 1 < result[j].numStation) {
+
 				result[j].numStation = result[minIndex].numStation + 1;
 				result[j].prec = minIndex;
 			}
 		}
     }
-	// Print the shortest path
+	/* Print the shortest path */
 	i = size - 1;
 	if (result[i].numStation >= INF) {
 		printf("nessun percorso\n");
 	} 
 	else {
-		// Create a stack to store the path
 		int stack[size];
-		int top = -1; // Initialize top of stack
+		int top = -1;   // top of stack
 
-		// Push the path onto the stack
+		/* Push the path onto the stack */
 		while(i != 0 && i != INF){
 			stack[++top] = result[i].station;
 			i = result[i].prec;
 		}
 		stack[++top] = result[0].station;
 
-		// Print the path in the correct order
+		/* Print the path in the correct order */
 		while(top != -1) {
 			printf("%d", stack[top--]);
 			if(top != -1) {
@@ -436,18 +448,20 @@ void planRouteFW(int start, int finish) {
 	}
 }
 
+/*  Check if station x is adjacent to station y  BackWards  */
 bool isXAdjYBW(dist x, dist y) {
-    // Check if station x is reachable from station y
     if (y.station > x.station && y.station - y.maxCar <= x.station) return true;
 
     return false;
 }
 
+/*  A queueless implementation of Dijkstra algorithm Forward (start > finish) */
 void planRouteBW(int start, int finish) {
     pntNodo s_start = searchStazione(start), curr;
     int i, size = 0, j, minIndex;
 	bool okay = true;
 
+	/*  Count all the possible station between start and finish  */
     curr = s_start;
     while(okay == true){
 		if (curr->km == finish) okay = false;
@@ -457,6 +471,7 @@ void planRouteBW(int start, int finish) {
 
     dist result[size];
 
+	/* Initialize the elements of the array with only the station counted before  */
     for (i = 0, curr = s_start; i < size; i++, curr = treePrecc(curr)) {
         result[i].station = curr->km;
         result[i].maxCar = curr->car[0];
@@ -465,8 +480,9 @@ void planRouteBW(int start, int finish) {
         result[i].seen = false;
     }
 
+	/* Actual search */
     for (i = 0; i < size; i++) {
-        // Find the node with the minimum distance
+        /* Find the node with the minimum distance with also the farthest from the start of the highway */
         minIndex = -1;
         for (j = 0; j < size; j++) {
             if (!result[j].seen 
@@ -476,38 +492,39 @@ void planRouteBW(int start, int finish) {
             }
         }
 
+		/* All nodes have been visited */
         if (minIndex == -1) {
-            break; // All nodes have been processed
+            break;
         }
 
         result[minIndex].seen = true;
 
-		// Update distances for all adjacent nodes
+		/* Update distances for all adjacent nodes */
 		for (j = 0; j < size; j++) {
 			if (!result[j].seen && isXAdjYBW(result[j], result[minIndex]) 
 					&& result[minIndex].numStation + 1 < result[j].numStation) {
+
 				result[j].numStation = result[minIndex].numStation + 1;
 				result[j].prec = minIndex;
 			}
 		}
     }
-	// Print the shortest path
+	/* Print the shortest path */
 	i = size - 1;
 	if (result[i].numStation >= INF) {
 		printf("nessun percorso\n");
 	} else {
-		// Create a stack to store the path
 		int stack[size];
-		int top = -1; // Initialize top of stack
+		int top = -1;   // top of stack
 
-		// Push the path onto the stack
+		/* Push the path onto the stack */
 		while(i != 0 && i != INF){
 			stack[++top] = result[i].station;
 			i = result[i].prec;
 		}
 		stack[++top] = result[0].station;
 
-		// Print the path in the correct order
+		/* Print the path in the correct order */
 		while(top != -1) {
 			printf("%d", stack[top--]);
 			if(top != -1) {
@@ -524,6 +541,7 @@ int main()
 	bool is_stazione, esiste, prima;
 	char tmp;
 	pntNodo stazione = nil, rm;
+
 	// nodo sentinella NULL
 	nil = malloc(sizeof(Nodo));
 	nil->color = b;
@@ -533,20 +551,20 @@ int main()
 	nil->numCar = -1;
 	nil->km = -1;
 
-	// nodo testa dell'albero
+	/* root of the tree */
 	t = malloc(sizeof(tree));
 	t->root = nil;
 	
 	while((tmp = getc_unlocked(stdin)) != EOF)
 	{
-		// aggiungi
+		/* case 'aggiungi' */
 		if(tmp == 'a'){
-			// scorre la parola fino a -
+			/* roll the input up to '-' */
 			while((tmp = getc_unlocked(stdin)) != '-');
-			// caso aggiungi-stazione
+			/* case 'aggiungi-stazione' */
 			if((tmp = getc_unlocked(stdin)) == 's'){
 			 
-				// scorre fino alla fine del comando
+				/* roll the input up to the end of the command */
 				while((tmp = getc_unlocked(stdin)) != ' ');
 
 				num_stazione = 0;
@@ -558,7 +576,8 @@ int main()
 					if(is_stazione == true) {
 						if (tmp == ' ') {
 							is_stazione = false;
-							// controllo se già esiste una stazione con quel numero
+
+							/* check if a station already exists */
 							if ((stazione = searchStazione(num_stazione)) != nil) {
 								esiste = false; // allora quella corrente che avrei creato non esiste
 								printf("non aggiunta\n");
@@ -567,7 +586,6 @@ int main()
 							else {
 								stazione = malloc(sizeof(Nodo));
 								stazione->km = num_stazione;
-								// array car è grande COST
 								stazione->car = calloc(COST, sizeof(int));
 								stazione->numCar = 0;
 								rbInsert(stazione);
@@ -592,9 +610,9 @@ int main()
 				if (esiste == true)
 					addCar(stazione, car);
 			}
-			// caso aggiungi-auto
+			/* case 'aggiungi-auto' */
 			else if(tmp == 'a'){
-				// scorre fino alla fine del comando
+				/* roll the input up to the end of the command */
 				while((tmp = getc_unlocked(stdin)) != ' ');
 
 				is_stazione = true;
@@ -607,7 +625,6 @@ int main()
 						if (tmp == ' ') {
 							is_stazione = false;
 							if ((stazione = searchStazione(num_stazione)) == nil) {
-								//printf("stazione) non aggiunta\n");
 								printf("non aggiunta\n");
 								esiste = false;
 							}
@@ -623,9 +640,9 @@ int main()
 				}
 			}
 		}
-		// rottama
+		/* case 'rottama' */
 		else if (tmp == 'r'){
-			// scorre fino alla fine del comando
+			/* roll the input up to the end of the command */
 			while((tmp = getc_unlocked(stdin)) != ' ');
 
 			is_stazione = true;
@@ -639,10 +656,8 @@ int main()
 						is_stazione = false;
 
 						if ((stazione = searchStazione(num_stazione)) == nil) {
-							//printf("stazione) non rottamata\n");
 							printf("non rottamata\n");
 							esiste = false;
-							//printf("esiste = %s\n", esiste ? "true" : "false");
 						}
 					}
 					else num_stazione = num_stazione * 10 + (tmp - '0');
@@ -654,15 +669,13 @@ int main()
 				if (removeCar(stazione, car) == true)
 					printf("rottamata\n");
 
-				else {
-				//printf("auto) non rottamata\n");
+				else
 				printf("non rottamata\n");
-				}
 			}
 		}
-		// demolisci
+		/* case 'demolisci' */
 		else if (tmp == 'd') {
-			// scorre fino alla fine del comando
+			/* roll the input up to the end of the command */
 			while((tmp = getc_unlocked(stdin)) != ' ');
 
 			num_stazione = 0;
@@ -676,9 +689,9 @@ int main()
 				printf("demolita\n");
 			}
 		}
-		// pianifica
+		/* case 'pianifica' */
 		else if (tmp == 'p') {
-			// scorre fino alla fine del comando
+			/* roll the input up to the end of the command */
 			while((tmp = getc_unlocked(stdin)) != ' ');
 			start = 0;
 			while((tmp = getc_unlocked(stdin)) != ' '){
@@ -694,10 +707,10 @@ int main()
 				planRouteBW(start, finish);
 		}
 	}
-	//inorderTreeWalk(t->root);
+	//inorderTreeWalk(t->root); DEBUG
 	return 0;
 }
-// DEBUG
+/*      DEBUG      */
 void stampaStazione(pntNodo x){
 
 	int i;
