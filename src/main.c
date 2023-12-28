@@ -346,7 +346,7 @@ bool removeCar(pntNodo s, int c) {
 				s->numCar--;
 				return true;
 			}
-			else { 
+			else {
 				int j, i_max;
 				for (j = 2, i_max = 1; j < s->numCar; j++){
 					if (s->car[i_max] < s->car[j]) i_max = j;
@@ -369,170 +369,170 @@ bool isXAdjYFW(dist x, dist y) {
     return false;
 }
 
-/*  A queueless implementation of Dijkstra algorithm Forward (start < finish) */
+/*  A queue-less implementation of Dijkstra algorithm Forward (start < finish) */
 void planRouteFW(int start, int finish) {
-    pntNodo s_start = searchStazione(start), curr;
-    int i, size = 0, j, minIndex;
-	bool okay = true;
+  pntNodo s_start = searchStazione(start), curr;
+  int i, size = 0, j, minIndex;
+  bool okay = true;
 
-	/*  Count all the possible station between start and finish  */
-    curr = s_start;
-    while(okay == true){
-		if (curr->km == finish) okay = false;
-        size++;
-        curr = treeSucc(curr);
+  /*  Count all the possible station between start and finish  */
+  curr = s_start;
+  while(okay == true){
+    if (curr->km == finish) okay = false;
+    size++;
+    curr = treeSucc(curr);
+  }
+
+  dist result[size];
+
+  /* Initialize the elements of the array with only the station counted before  */
+  for (i = 0, curr = s_start; i < size; i++, curr = treeSucc(curr)) {
+    result[i].station = curr->km;
+    result[i].maxCar = curr->car[0];
+    result[i].numStation = (i == 0) ? 0 : INF;
+    result[i].prec = INF;
+    result[i].seen = false;
+  }
+
+  /* Actual search */
+  for (i = 0; i < size; i++) {
+    /* Find the node with the minimum distance */
+    minIndex = -1;
+    for (j = 0; j < size; j++) {
+      if (!result[j].seen && (minIndex == -1 || result[j].numStation < result[minIndex].numStation)) {
+        minIndex = j;
+      }
     }
 
-    dist result[size];
-
-	/* Initialize the elements of the array with only the station counted before  */
-    for (i = 0, curr = s_start; i < size; i++, curr = treeSucc(curr)) {
-        result[i].station = curr->km;
-        result[i].maxCar = curr->car[0];
-        result[i].numStation = (i == 0) ? 0 : INF;
-        result[i].prec = INF;
-        result[i].seen = false;
+    /* All nodes have been visited */
+    if (minIndex == -1) {
+      break;
     }
 
-	/* Actual search */
-    for (i = 0; i < size; i++) {
-        /* Find the node with the minimum distance */
-        minIndex = -1;
-        for (j = 0; j < size; j++) {
-            if (!result[j].seen && (minIndex == -1 || result[j].numStation < result[minIndex].numStation)) {
-                minIndex = j;
-            }
-        }
+    result[minIndex].seen = true;
 
-		/* All nodes have been visited */
-        if (minIndex == -1) {
-            break;
-        }
+    /* Update distances for all adjacent nodes */
+    for (j = 0; j < size; j++) {
+      if (!result[j].seen && isXAdjYFW(result[j], result[minIndex]) 
+        && result[minIndex].numStation + 1 < result[j].numStation) {
 
-        result[minIndex].seen = true;
-
-		/* Update distances for all adjacent nodes */
-		for (j = 0; j < size; j++) {
-			if (!result[j].seen && isXAdjYFW(result[j], result[minIndex]) 
-					&& result[minIndex].numStation + 1 < result[j].numStation) {
-
-				result[j].numStation = result[minIndex].numStation + 1;
-				result[j].prec = minIndex;
-			}
-		}
+        result[j].numStation = result[minIndex].numStation + 1;
+        result[j].prec = minIndex;
+      }
     }
-	/* Print the shortest path */
-	i = size - 1;
-	if (result[i].numStation >= INF) {
-		printf("nessun percorso\n");
-	} 
-	else {
-		int stack[size];
-		int top = -1;   // top of stack
+  }
+  /* Print the shortest path */
+  i = size - 1;
+  if (result[i].numStation >= INF) {
+    printf("nessun percorso\n");
+  }
+  else {
+    int stack[size];
+    int top = -1;   // top of stack
 
-		/* Push the path onto the stack */
-		while(i != 0 && i != INF){
-			stack[++top] = result[i].station;
-			i = result[i].prec;
-		}
-		stack[++top] = result[0].station;
+    /* Push the path onto the stack */
+    while(i != 0 && i != INF){
+      stack[++top] = result[i].station;
+      i = result[i].prec;
+    }
+    stack[++top] = result[0].station;
 
-		/* Print the path in the correct order */
-		while(top != -1) {
-			printf("%d", stack[top--]);
-			if(top != -1) {
-				printf(" ");
-			}
-		}
-		printf("\n");
-	}
+    /* Print the path in the correct order */
+    while(top != -1) {
+      printf("%d", stack[top--]);
+      if(top != -1) {
+        printf(" ");
+      }
+    }
+    printf("\n");
+  }
 }
 
-/*  Check if station x is adjacent to station y  BackWards  */
+/*  Check if station x is adjacent to station y BackWards  */
 bool isXAdjYBW(dist x, dist y) {
     if (y.station > x.station && y.station - y.maxCar <= x.station) return true;
 
     return false;
 }
 
-/*  A queueless implementation of Dijkstra algorithm Forward (start > finish) */
+/*  A queue-less implementation of Dijkstra algorithm BackWard (start > finish) */
 void planRouteBW(int start, int finish) {
-    pntNodo s_start = searchStazione(start), curr;
-    int i, size = 0, j, minIndex;
-	bool okay = true;
+  pntNodo s_start = searchStazione(start), curr;
+  int i, size = 0, j, minIndex;
+  bool okay = true;
 
-	/*  Count all the possible station between start and finish  */
-    curr = s_start;
-    while(okay == true){
-		if (curr->km == finish) okay = false;
-        size++;
-        curr = treePrecc(curr);
+  /*  Count all the possible station between start and finish  */
+  curr = s_start;
+  while(okay == true){
+    if (curr->km == finish) okay = false;
+    size++;
+    curr = treePrecc(curr);
+  }
+
+  dist result[size];
+
+  /* Initialize the elements of the array with only the station counted before  */
+  for (i = 0, curr = s_start; i < size; i++, curr = treePrecc(curr)) {
+    result[i].station = curr->km;
+    result[i].maxCar = curr->car[0];
+    result[i].numStation = (i == 0) ? 0 : INF; // Initialize distances
+    result[i].prec = INF;
+    result[i].seen = false;
+  }
+
+  /* Actual search */
+  for (i = 0; i < size; i++) {
+    /* Find the node with the minimum distance with also the farthest from the start of the highway */
+    minIndex = -1;
+    for (j = 0; j < size; j++) {
+      if (!result[j].seen 
+        && ((minIndex == -1 || result[j].numStation < result[minIndex].numStation)
+        || (minIndex != -1 && result[j].numStation == result[minIndex].numStation && result[j].station < result[minIndex].station))) {
+        minIndex = j;
+      }
     }
 
-    dist result[size];
-
-	/* Initialize the elements of the array with only the station counted before  */
-    for (i = 0, curr = s_start; i < size; i++, curr = treePrecc(curr)) {
-        result[i].station = curr->km;
-        result[i].maxCar = curr->car[0];
-        result[i].numStation = (i == 0) ? 0 : INF; // Initialize distances
-        result[i].prec = INF;
-        result[i].seen = false;
+    /* All nodes have been visited */
+    if (minIndex == -1) {
+      break;
     }
 
-	/* Actual search */
-    for (i = 0; i < size; i++) {
-        /* Find the node with the minimum distance with also the farthest from the start of the highway */
-        minIndex = -1;
-        for (j = 0; j < size; j++) {
-            if (!result[j].seen 
-					&& ((minIndex == -1 || result[j].numStation < result[minIndex].numStation)
-					|| (minIndex != -1 && result[j].numStation == result[minIndex].numStation && result[j].station < result[minIndex].station))) {
-                minIndex = j;
-            }
-        }
+    result[minIndex].seen = true;
 
-		/* All nodes have been visited */
-        if (minIndex == -1) {
-            break;
-        }
+    /* Update distances for all adjacent nodes */
+    for (j = 0; j < size; j++) {
+      if (!result[j].seen && isXAdjYBW(result[j], result[minIndex]) 
+        && result[minIndex].numStation + 1 < result[j].numStation) {
 
-        result[minIndex].seen = true;
-
-		/* Update distances for all adjacent nodes */
-		for (j = 0; j < size; j++) {
-			if (!result[j].seen && isXAdjYBW(result[j], result[minIndex]) 
-					&& result[minIndex].numStation + 1 < result[j].numStation) {
-
-				result[j].numStation = result[minIndex].numStation + 1;
-				result[j].prec = minIndex;
-			}
-		}
+        result[j].numStation = result[minIndex].numStation + 1;
+        result[j].prec = minIndex;
+      }
     }
-	/* Print the shortest path */
-	i = size - 1;
-	if (result[i].numStation >= INF) {
-		printf("nessun percorso\n");
-	} else {
-		int stack[size];
-		int top = -1;   // top of stack
+  }
+  /* Print the shortest path */
+  i = size - 1;
+  if (result[i].numStation >= INF) {
+    printf("nessun percorso\n");
+  } else {
+    int stack[size];
+    int top = -1;   // top of stack
 
-		/* Push the path onto the stack */
-		while(i != 0 && i != INF){
-			stack[++top] = result[i].station;
-			i = result[i].prec;
-		}
-		stack[++top] = result[0].station;
+    /* Push the path onto the stack */
+    while(i != 0 && i != INF){
+      stack[++top] = result[i].station;
+      i = result[i].prec;
+    }
+    stack[++top] = result[0].station;
 
-		/* Print the path in the correct order */
-		while(top != -1) {
-			printf("%d", stack[top--]);
-			if(top != -1) {
-				printf(" ");
-			}
-		}
-		printf("\n");
-	}
+    /* Print the path in the correct order */
+    while(top != -1) {
+      printf("%d", stack[top--]);
+      if(top != -1) {
+        printf(" ");
+      }
+    }
+    printf("\n");
+  }
 }
 
 int main()
@@ -707,7 +707,7 @@ int main()
 				planRouteBW(start, finish);
 		}
 	}
-	//inorderTreeWalk(t->root); DEBUG
+	// inorderTreeWalk(t->root); DEBUG
 	return 0;
 }
 /*      DEBUG      */
@@ -725,7 +725,7 @@ void stampaStazione(pntNodo x){
 void inorderTreeWalk(pntNodo x) {
 	if(x != nil){
 		inorderTreeWalk(x->left);
-		//printf("%d\t", x->km);
+		// printf("%d\t", x->km);
 		stampaStazione(x);
 		inorderTreeWalk(x->right);
 	}
